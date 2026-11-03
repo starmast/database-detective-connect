@@ -16,9 +16,9 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
@@ -47,7 +47,7 @@ jobs:
           mkdir -p package/BepInEx/plugins/DDConnect
           cp DDConnect/bin/Release/DDConnect.dll README.md LICENSE package/BepInEx/plugins/DDConnect/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: DDConnect-${{ steps.version.outputs.version }}
           path: package/
@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: DDConnect-${{ needs.build.outputs.version }}
           path: package
