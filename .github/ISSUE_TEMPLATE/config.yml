@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Install and setup help
+    url: https://github.com/starmast/database-detective-connect#install
+    about: Step-by-step install, editor setup and troubleshooting in the README.
+  - name: BepInEx documentation
+    url: https://docs.bepinex.dev/
+    about: Problems installing or running BepInEx itself.

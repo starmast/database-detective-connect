@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest an idea or improvement for DD Connect.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Please check the README's [Coming later](https://github.com/starmast/database-detective-connect#coming-later) section and existing issues first, in case it's already planned.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe what you're trying to do, or what's frustrating about how DD Connect works today.
+      placeholder: I'd like to run a query from VS Code and have it open as a result window in the game.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: How could DD Connect help?
+      description: Describe how you'd like it to work. Rough ideas are fine.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've tried instead?
+      description: Workarounds or other tools you've used.
+
+  - type: input
+    id: editor
+    attributes:
+      label: SQL editor
+      description: Which editor or tool would you use this with?
+      placeholder: VS Code with SQLTools
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this hasn't been suggested yet.
+          required: true
