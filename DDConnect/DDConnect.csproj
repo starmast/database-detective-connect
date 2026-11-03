@@ -6,7 +6,7 @@
     <RootNamespace>DDConnect</RootNamespace>
     <Product>DD Connect</Product>
     <!-- CI overrides this from the release tag: dotnet build -p:Version=1.2.3 -->
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
