@@ -12,39 +12,87 @@ Your save is never touched. The copy is read-only, so nothing you do in your edi
 
 ## Install
 
+DD Connect works on Windows, Linux and macOS. It's the same download for all three, but installing BepInEx is a little different on each.
+
+Linux and macOS support is new and less tested than Windows. If something doesn't work, please [open an issue](../../issues/new/choose).
+
+First, open the game folder: in Steam, right-click **Database Detective** → **Manage** → **Browse local files**.
+
 ### 1. Install BepInEx (one time)
 
-BepInEx is the mod loader DD Connect runs on.
+BepInEx is the mod loader DD Connect runs on. Get it from the [BepInEx releases page](https://github.com/BepInEx/BepInEx/releases) (version 5.4.23 or newer 5.x).
 
-1. Download **`BepInEx_win_x64_5.4.23.x.zip`** (any 5.4.23 or newer 5.x version) from the [BepInEx releases page](https://github.com/BepInEx/BepInEx/releases).
-2. Open the game folder: in Steam, right-click **Database Detective** → **Manage** → **Browse local files**.
-3. Extract the zip into that folder, so `winhttp.dll` and the `BepInEx` folder sit next to `copOS.exe`.
-4. Start the game once, then quit. This lets BepInEx finish setting up.
+<details open>
+<summary><b>Windows</b></summary>
+
+1. Download **`BepInEx_win_x64_5.4.23.x.zip`**.
+2. Extract it into the game folder, so `winhttp.dll` and the `BepInEx` folder sit next to `copOS.exe`.
+3. Start the game once, then quit. This lets BepInEx finish setting up.
+
+</details>
+
+<details>
+<summary><b>Linux</b></summary>
+
+1. Download **`BepInEx_linux_x64_5.4.23.x.zip`**.
+2. Extract it into the game folder, so `run_bepinex.sh` and the `BepInEx` folder sit next to the game's executable.
+3. Make the script executable. In a terminal in the game folder, run:
+   ```
+   chmod +x run_bepinex.sh
+   ```
+4. In Steam, right-click the game → **Properties** → **General**, and set **Launch Options** to:
+   ```
+   ./run_bepinex.sh %command%
+   ```
+5. Start the game once, then quit.
+
+*Running the Windows version through Proton instead?* Follow the **Windows** steps, then set Launch Options to `WINEDLLOVERRIDES="winhttp=n,b" %command%`.
+
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+1. Download **`BepInEx_macos_universal_5.4.23.x.zip`**.
+2. Extract it into the game folder, so `run_bepinex.sh` and the `BepInEx` folder sit next to the game's `.app`.
+3. Make the script executable. In Terminal, in the game folder, run:
+   ```
+   chmod +x run_bepinex.sh
+   ```
+4. In Steam, right-click the game → **Properties** → **General**, and set **Launch Options** to:
+   ```
+   ./run_bepinex.sh %command%
+   ```
+5. Start the game once, then quit.
+
+</details>
 
 ### 2. Install DD Connect
 
 1. Download **`DDConnect-x.y.z.zip`** from the [Releases](../../releases) page.
-2. Extract it into the same game folder. When Windows asks, merge the `BepInEx` folders.
+2. Extract it into the same game folder, merging it with the existing `BepInEx` folder.
 
 ### 3. Check it works
 
-Start the game and load a case. Then paste this into the File Explorer address bar:
+Start the game and load a case. A file called **`current.db`** appears in the game's data folder. That's the file your editor opens.
 
-```
-%USERPROFILE%\AppData\LocalLow\HsuCorp\copOS\Connect
-```
+| System | Where `current.db` is |
+|---|---|
+| Windows | `%USERPROFILE%\AppData\LocalLow\HsuCorp\copOS\Connect\current.db` |
+| Linux | `~/.config/unity3d/HsuCorp/copOS/Connect/current.db` |
+| macOS | `~/Library/Application Support/HsuCorp/copOS/Connect/current.db` |
 
-You should see a file called **`current.db`**. That's the file your editor opens.
+On Windows, paste the folder part into the File Explorer address bar. If you can't find it, look in `BepInEx/LogOutput.log` in the game folder. The line `Mirroring the current level to ...` shows the exact path on your computer.
 
 ---
 
 ## Connect your editor
 
-Point your editor at this file. Replace `YOUR-NAME` with your Windows user name:
+Point your editor at `current.db`, using the full path from the table above. Your editor may need the full path written out, for example:
 
-```
-C:\Users\YOUR-NAME\AppData\LocalLow\HsuCorp\copOS\Connect\current.db
-```
+- **Windows:** `C:\Users\YOUR-NAME\AppData\LocalLow\HsuCorp\copOS\Connect\current.db`
+- **Linux:** `/home/YOUR-NAME/.config/unity3d/HsuCorp/copOS/Connect/current.db`
+- **macOS:** `/Users/YOUR-NAME/Library/Application Support/HsuCorp/copOS/Connect/current.db`
 
 ### VS Code with SQLTools (recommended)
 
@@ -54,7 +102,7 @@ SQLTools gives you table and column autocomplete, a results grid and query histo
 2. Open the SQLTools sidebar and choose **Add New Connection** → **SQLite**.
 3. Name it `Database Detective`, set **Database file** to the path above, and save.
 4. Connect. If SQLTools offers to install the SQLite driver's dependencies, accept.
-5. Open a new `.sql` file, write a query, and run it with **Ctrl+E Ctrl+E**.
+5. Open a new `.sql` file, write a query, and run it with **Ctrl+E Ctrl+E** (**Cmd+E Cmd+E** on macOS).
 
 <details>
 <summary>Prefer settings.json?</summary>
@@ -64,7 +112,7 @@ SQLTools gives you table and column autocomplete, a results grid and query histo
   {
     "name": "Database Detective",
     "driver": "SQLite",
-    "database": "C:/Users/YOUR-NAME/AppData/LocalLow/HsuCorp/copOS/Connect/current.db"
+    "database": "C:/Users/YOUR-NAME/AppData/LocalLow/HsuCorp/copOS/Connect/current.db" // use your system's path
   }
 ]
 ```
@@ -80,7 +128,7 @@ Any tool that opens SQLite files works:
 | **SQLite3 Editor** (VS Code) | Open `current.db` in VS Code. Little setup needed. |
 | **SQLite Viewer** (VS Code) | Open `current.db` to browse tables (viewing only). |
 | **DB Browser for SQLite**, **DBeaver**, **DataGrip** | Open `current.db` as a SQLite database. |
-| **Excel**, **Power BI** (ODBC) | Install the free [SQLite ODBC driver](http://www.ch-werner.de/sqliteodbc/) (`sqliteodbc_w64.exe`). Then add a data source in **ODBC Data Sources (64-bit)** that points at `current.db`. |
+| **Excel**, **Power BI** (ODBC, Windows) | Install the free [SQLite ODBC driver](http://www.ch-werner.de/sqliteodbc/) (`sqliteodbc_w64.exe`). Then add a data source in **ODBC Data Sources (64-bit)** that points at `current.db`. |
 
 ---
 
@@ -97,12 +145,12 @@ Any tool that opens SQLite files works:
 
 ## Settings
 
-Optional. Edit `BepInEx\config\dev.ddconnect.cfg` in the game folder, which is created on first run.
+Optional. Edit `BepInEx/config/dev.ddconnect.cfg` in the game folder, which is created on first run.
 
 | Setting | Default | What it does |
 |---|---|---|
 | `Enabled` | `true` | Turn DD Connect on or off. |
-| `MirrorPath` | *(empty)* | Where to put the copy. Empty means the `Connect\current.db` location above. |
+| `MirrorPath` | *(empty)* | Where to put the copy. Empty means the `Connect/current.db` location above. |
 | `DebounceMs` | `300` | How long to wait after the game's last change before updating the copy. |
 
 ---
@@ -110,9 +158,12 @@ Optional. Edit `BepInEx\config\dev.ddconnect.cfg` in the game folder, which is c
 ## Troubleshooting
 
 **There's no `current.db`.**
-Open `BepInEx\LogOutput.log` in the game folder and look for lines starting with `DD Connect`.
-- No `DD Connect` lines at all: the mod didn't load. Check that `BepInEx\plugins\DDConnect\DDConnect.dll` exists.
-- No log file at all: BepInEx isn't installed correctly. Check that `winhttp.dll` is next to `copOS.exe`.
+Open `BepInEx/LogOutput.log` in the game folder and look for lines starting with `DD Connect`.
+- No `DD Connect` lines at all: the mod didn't load. Check that `BepInEx/plugins/DDConnect/DDConnect.dll` exists.
+- No log file at all: BepInEx isn't running.
+  - **Windows:** check that `winhttp.dll` is next to `copOS.exe`.
+  - **Linux and macOS:** check that the Steam Launch Options are set to `./run_bepinex.sh %command%`, and that you ran `chmod +x run_bepinex.sh`.
+  - **macOS:** if macOS blocks the downloaded files, run `xattr -dr com.apple.quarantine .` in Terminal, in the game folder.
 - A `DD Connect` error line: please open an issue and include the log.
 
 **My editor says the database is read-only.**
@@ -122,7 +173,9 @@ That's intended. The copy can be read but not changed.
 
 ## Uninstall
 
-Delete `BepInEx\plugins\DDConnect` from the game folder. You can also delete the `Connect` folder from the path in [Check it works](#3-check-it-works).
+Delete `BepInEx/plugins/DDConnect` from the game folder. You can also delete the `Connect` folder from the path in [Check it works](#3-check-it-works).
+
+To remove BepInEx completely on Linux or macOS, also clear the Steam Launch Options.
 
 ---
 
