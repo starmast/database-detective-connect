@@ -1,0 +1,17 @@
+# Decompiled game source (not ours to distribute)
+/dd/
+
+# Build output
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# CI packaging output
+/package/
+*.zip
