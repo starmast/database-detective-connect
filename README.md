@@ -4,7 +4,7 @@ Solve **Database Detective: Minor Crimes Division** cases from your favorite SQL
 
 DD Connect is a small mod that keeps a copy of the case you're playing in one file. You open it once in VS Code (or any SQLite editor) and it stays up to date as you play: new searches, saved tables, website downloads and level changes all show up automatically.
 
-The file is only a copy, so changing it can't break the game. Your save changes in only two cases, and you start both yourself: when you create a new table in your editor, DD Connect adds that table to your case (see [Create tables in your editor](#create-tables-in-your-editor)), and when you ask [`ddsql`](#ddsql-a-sql-prompt-for-the-running-game) to `--save` a search or to `drop` a table you made. You can turn both off in the [settings](#settings).
+The file is only a copy, so changing it can't break the game. Your save changes in only two cases, and you start both yourself: when you create a new table in your editor, DD Connect adds that table to your case (see [Create tables in your editor](#create-tables-in-your-editor)), and when you ask [`ddsql`](#ddsql-a-sql-prompt-for-the-running-game) to `--save` a search or to `drop` a table. You can turn both off in the [settings](docs/settings.md).
 
 > **Unofficial fan mod.** DD Connect is not affiliated with, endorsed by or supported by the makers of Database Detective. Please don't send them bug reports about it. See the [disclaimer](#disclaimer).
 
@@ -104,31 +104,7 @@ SQLTools gives you table and column autocomplete, a results grid and query histo
 4. Connect. If SQLTools offers to install the SQLite driver's dependencies, accept.
 5. Open a new `.sql` file, write a query, and run it with **Ctrl+E Ctrl+E** (**Cmd+E Cmd+E** on macOS).
 
-<details>
-<summary>Prefer settings.json?</summary>
-
-```json
-"sqltools.connections": [
-  {
-    "name": "Database Detective",
-    "driver": "SQLite",
-    "database": "C:/Users/YOUR-NAME/AppData/LocalLow/HsuCorp/copOS/Connect/current.db" // use your system's path
-  }
-]
-```
-
-</details>
-
-### Other editors
-
-Any tool that opens SQLite files works:
-
-| Editor | How |
-|---|---|
-| **SQLite3 Editor** (VS Code) | Open `current.db` in VS Code. Little setup needed. |
-| **SQLite Viewer** (VS Code) | Open `current.db` to browse tables (viewing only). |
-| **DB Browser for SQLite**, **DBeaver**, **DataGrip** | Open `current.db` as a SQLite database. |
-| **Excel**, **Power BI** (ODBC, Windows) | Install the free [SQLite ODBC driver](http://www.ch-werner.de/sqliteodbc/) (`sqliteodbc_w64.exe`). Then add a data source in **ODBC Data Sources (64-bit)** that points at `current.db`. |
+Using another editor (DB Browser, DBeaver, DataGrip, Excel, Power BI)? See [Editors](docs/editors.md).
 
 ---
 
@@ -141,103 +117,38 @@ CREATE TABLE red_cars AS
 SELECT * FROM vehicles WHERE color = 'red';
 ```
 
-A table with columns you define yourself works too:
+Within a second or two the table gets an icon in the game. It's saved with your case like any other table. The game's limits apply (valid name, 1 to 50,000 rows, 60 icons), and only new tables are sent. Something didn't arrive? Run `SELECT * FROM _connect_results;` to see why.
 
-```sql
-CREATE TABLE my_notes (suspect TEXT, note TEXT);
-INSERT INTO my_notes VALUES ('Dana Hill', 'Seen near the warehouse');
-```
-
-Within a second or two the table gets an icon in the game, and a message tells you what arrived. It's saved with your case like any other table.
-
-Things to know:
-- **Only new tables are sent.** Changing a table that already exists in the copy does nothing, and the next update undoes it.
-- **Your case needs to be open in the game.** On the main menu, or with the game closed, new tables are not sent and are removed at the next update.
-- **The game keeps the rows, not the query.** The table is a snapshot of the rows when you ran the statement. Right-clicking its icon has no "Restore query" entry.
-- **The game's limits apply.** The name must start with a letter or underscore and use only letters, digits and underscores. The table can't be empty or have more than 50,000 rows, the name can't be one the game reserves or already uses, and your desktop holds at most 60 icons.
-- **Something refused?** Run `SELECT * FROM _connect_results;` to see why. Refused tables are removed at the next update, so fix the statement and run it again.
-- **Rows bypass the in-game search rules.** The words the search box blocks (see Tips) don't matter here, because the game receives data you built in your own editor.
+More in [Creating tables in your editor](docs/editor-tables.md).
 
 ---
 
 ## ddsql: a SQL prompt for the running game
 
-`ddsql` is a small command-line tool. It connects to the game while you play and lets you type queries in a terminal, like `snow sql` or `psql`. Results are always current (no waiting for the copy to refresh), and it works well in scripts and for AI agents.
-
-### Set it up
+`ddsql` is a small command-line tool. It connects to the game while you play and lets you type queries in a terminal, like `snow sql` or `psql`. Results are always current, and it works well in scripts and for AI agents.
 
 1. Download `ddsql-win-x64.exe`, `ddsql-linux-x64` or `ddsql-osx-arm64` from the [latest release](../../releases/latest). Rename it to `ddsql` (or `ddsql.exe`) and put it somewhere on your `PATH`. On Linux and macOS, run `chmod +x ddsql`.
-2. Turn the connection on. In `BepInEx/config/dev.ddconnect.cfg`, under `[Bridge]`, set `Enabled = true`. (Or start the game with the environment variable `DDCONNECT_BRIDGE=1`.)
+2. In `BepInEx/config/dev.ddconnect.cfg`, under `[Bridge]`, set `Enabled = true`. It's off by default because it opens a port on your own computer.
 3. Start the game, open a case, and check: `ddsql connection test`.
-
-The connection is off by default because it opens a port on your own computer (127.0.0.1 only). Every request needs a random token that the game writes to `Connect/bridge.json` each time it starts, so only programs running as you can use it.
-
-### Use it
 
 ```text
 ddsql                                   open the prompt
 ddsql -q "SELECT * FROM vehicles LIMIT 5"
-ddsql -f queries.sql                    run a file of statements
-ddsql -q "SELECT 1" --format json       table, json, ndjson or csv
-ddsql state                             level, desktop icons and tables
-```
-
-In the prompt, end a statement with `;`. Dot-commands help you around: `.tables`, `.schema [name]`, `.state`, `.format json`, `.help`, `.quit`.
-
-```text
-ddsql [Level 3]> SELECT name, color FROM vehicles
-      ...> WHERE color = 'red';
- name   | color
---------+------
- Civic  | red
-(1 row, 4 ms)
-```
-
-**Queries are read-only.** `INSERT`, `UPDATE`, `DELETE`, `CREATE` and the like are refused, so `ddsql` cannot damage your case. There is one way to create a table, and you have to ask for it by name: add `--save NAME` to a single `SELECT`.
-
-```text
 ddsql -q "SELECT * FROM vehicles WHERE color = 'red'" --save red_cars
 ```
 
-That runs the search inside the game, exactly as if you had typed it into the search box and ticked "save". The game's rules apply (blocked words, table names, the 60-icon limit), the table gets its icon, and "Restore query" works. In the prompt, `.save red_cars` saves the last `SELECT` the same way.
-
-**Cleaning up while you test.** Every `--save` leaves its result window on the game's taskbar, and the game refuses searches once the taskbar is full. Two commands tidy up:
-
-```text
-ddsql close-windows                     close the windows that fill the taskbar
-ddsql drop red_cars blue_cars           delete tables, as the game's "Delete table" does
-```
-
-`drop` goes through the game's own delete, so it removes whatever the game would let you delete there, which can include the case's own tables. Use it on a throwaway save. Deleting with SQL (`DROP TABLE`) is still refused. In the prompt these are `.close` and `.drop NAME`.
-
-Exit codes, handy for scripts: `0` ok, `1` the game refused or failed the query, `2` wrong usage, `3` the game can't be reached, `4` wrong token. When output is piped, the format defaults to `json`.
-
-Tool authors and agents can talk to the game directly; see the [bridge protocol](docs/bridge-protocol.md). `tools/smoke.sh` checks a running game end to end (use a throwaway save, since it creates a table).
+Queries are read-only. The only way to create a table is `--save NAME`, which runs the search inside the game so its rules apply. See [ddsql](docs/ddsql.md) for the prompt, output formats, cleanup commands (`drop`, `close-windows`) and exit codes.
 
 ---
 
-## Tips
+## More
 
-- **Which case am I looking at?** Run `SELECT * FROM _mirror_info;`. It shows the level and when the copy was last updated.
-- **New table not showing up?** Refresh your editor's table list. Editors remember the table list, but the data itself is already up to date.
-- **What are `result_1`, `result_2`…?** Those are your unsaved in-game searches.
-- **Scratch tables.** Every new table you create in the copy is sent to the game. For work you don't want on your desktop, use `WITH name AS (...)` or `CREATE TEMP TABLE name AS ...`. Temp tables last until your editor disconnects.
-- **Pasting queries back into the game.** Your editor allows any SQLite, but the in-game search box blocks some words: `DROP`, `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, `TABLE` and `sqlite_master`.
-- **Seeing Level 0 on the main menu?** That's normal. The copy switches to your case once it loads.
-
----
-
-## Settings
-
-Optional. Edit `BepInEx/config/dev.ddconnect.cfg` in the game folder, which is created on first run.
-
-| Setting | Default | What it does |
-|---|---|---|
-| `Enabled` | `true` | Turn DD Connect on or off. |
-| `MirrorPath` | *(empty)* | Where to put the copy. Empty means the `Connect/current.db` location above. |
-| `DebounceMs` | `300` | How long to wait after the game's last change before updating the copy. |
-| `SendTables` (in `[Editor]`) | `true` | Let tables you create in your editor appear in the game. Turn it off to make the copy read-only again. |
-| `Enabled` (in `[Bridge]`) | `false` | Let [`ddsql`](#ddsql-a-sql-prompt-for-the-running-game) and other tools connect to the running game on 127.0.0.1. |
+- [Editors](docs/editors.md): DB Browser, DBeaver, DataGrip, Excel and Power BI
+- [Creating tables in your editor](docs/editor-tables.md): limits, scratch tables, what to do when a table is refused
+- [ddsql](docs/ddsql.md): the full command-line guide
+- [Settings](docs/settings.md): the config file
+- [Tips](docs/tips.md)
+- [Bridge protocol](docs/bridge-protocol.md): for tool authors
 
 ---
 
@@ -253,13 +164,9 @@ Open `BepInEx/LogOutput.log` in the game folder and look for lines starting with
 - A `DD Connect` error line: please open an issue and include the log.
 
 **My editor says the database is read-only.**
-Either `SendTables` is set to `false` (see [Settings](#settings)), which makes the copy read-only on purpose, or an older version of DD Connect left the file marked read-only. Starting the game once with `SendTables` on clears that.
+Either `SendTables` is set to `false` (see [Settings](docs/settings.md)), which makes the copy read-only on purpose, or an older version of DD Connect left the file marked read-only. Starting the game once with `SendTables` on clears that.
 
-**`ddsql` says it can't reach the game.**
-The game must be running with `Enabled = true` under `[Bridge]` in the settings. If you see a `bridge.json` mentioned as "left over", the game closed without cleaning up; start it again.
-
-**My table didn't show up in the game.**
-Run `SELECT * FROM _connect_results;` in your editor. It lists each table that was sent and why any were refused. See [Create tables in your editor](#create-tables-in-your-editor).
+More fixes: [creating tables](docs/editor-tables.md#my-table-didnt-show-up) and [ddsql](docs/ddsql.md#troubleshooting).
 
 ---
 
