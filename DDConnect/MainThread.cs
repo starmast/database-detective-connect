@@ -57,7 +57,7 @@ namespace DDConnect
         /// <summary>The level the game currently has loaded (0 is the main menu).</summary>
         public static volatile int Level;
 
-        /// <summary>True when a case is open, i.e. the query bar exists.</summary>
+        /// <summary>True when a case is open (a numbered level or a workshop case), i.e. the query bar exists.</summary>
         public static volatile bool InLevel;
 
         public static void Init(ManualLogSource logger) => log = logger;
@@ -82,7 +82,7 @@ namespace DDConnect
             if (Time.unscaledTime >= nextProbe)
             {
                 nextProbe = Time.unscaledTime + ProbeSeconds;
-                InLevel = GameUi.Ready && Level > 0 && GameUi.FindQueryButton() != null;
+                InLevel = GameUi.Ready && Level != 0 && GameUi.FindQueryButton() != null;
             }
 
             while (queue.TryDequeue(out Pending pending))

@@ -147,11 +147,11 @@ namespace DdSql
             Level = level;
             if (!state.GetProperty("inLevel").GetBoolean())
             {
-                stdout.WriteLine(level == 0 ? "No case is open (main menu)." : $"Level {level} is not ready yet.");
+                stdout.WriteLine(level == 0 ? "No case is open (main menu)." : $"{DescribeLevel(level)} is not ready yet.");
                 return;
             }
 
-            stdout.WriteLine($"Level {level}, {state.GetProperty("iconCount").GetInt32()} of {state.GetProperty("iconLimit").GetInt32()} desktop icons used" +
+            stdout.WriteLine($"{Char.ToUpperInvariant(DescribeLevel(level)[0])}{DescribeLevel(level).Substring(1)}, {state.GetProperty("iconCount").GetInt32()} of {state.GetProperty("iconLimit").GetInt32()} desktop icons used" +
                              (state.GetProperty("busy").GetBoolean() ? " (a save is running)" : ""));
             foreach (JsonElement table in state.GetProperty("tables").EnumerateArray())
             {
@@ -159,6 +159,14 @@ namespace DdSql
                 stdout.WriteLine("  " + name + (table.GetProperty("saved").GetBoolean() ? "  (saved search)" : ""));
             }
         }
+
+        /// <summary>"Level 3", "custom case" (a workshop case is level -1 in the game) or "no case open".</summary>
+        internal static string DescribeLevel(int level) => level switch
+        {
+            0 => "no case open",
+            -1 => "custom case",
+            _ => $"Level {level}",
+        };
 
         internal static bool IsRead(string statement)
         {

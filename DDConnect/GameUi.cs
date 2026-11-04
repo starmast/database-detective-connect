@@ -65,7 +65,9 @@ namespace DDConnect
             Type notifications = Resolve("NotificationHandler");
 
             getAllTableNames = Method(databaseUtils, "GetAllTableNames", typeof(IDbConnection));
-            dropTable = Method(databaseUtils, "DropTable", typeof(string), typeof(IDbConnection));
+            // Newer builds added a third parameter (closeConnection); accept either.
+            dropTable = AccessTools.Method(databaseUtils, "DropTable", new[] { typeof(string), typeof(IDbConnection), typeof(bool) })
+                ?? Method(databaseUtils, "DropTable", typeof(string), typeof(IDbConnection));
             isTableNameValid = Method(iconGenerator, "IsTableNameValid", notifications, typeof(string));
             createIcon = Method(iconGenerator, "CreateIcon", typeof(string));
             createUserPanel = Method(createPanels, "CreateUserPanel", typeof(string), typeof(bool), typeof(string));
@@ -148,7 +150,8 @@ namespace DDConnect
             Invoke(addIcon, null, new object[] { icon.transform, true });
         }
 
-        public static void DropTable(string name) => Invoke(dropTable, null, new object[] { name, null });
+        public static void DropTable(string name) =>
+            Invoke(dropTable, null, dropTable.GetParameters().Length == 3 ? new object[] { name, null, true } : new object[] { name, null });
 
         /// <summary>
         /// Deletes a table the way the icon's "Delete table" menu entry does: query record, icon position, the table

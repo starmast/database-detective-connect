@@ -137,7 +137,7 @@ namespace DdSql
         {
             PingInfo ping = client.Ping();
             stdout.WriteLine($"Connected to DD Connect {ping.Version} on 127.0.0.1:{info.Port} (protocol {ping.Protocol}).");
-            stdout.WriteLine(ping.InLevel ? $"A case is open: Level {ping.Level}." : "No case is open yet; load one in the game to run queries.");
+            stdout.WriteLine(ping.InLevel ? $"A case is open: {Runner.DescribeLevel(ping.Level)}." : "No case is open yet; load one in the game to run queries.");
             return ExitCodes.Ok;
         }
 

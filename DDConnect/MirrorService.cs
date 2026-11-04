@@ -45,7 +45,10 @@ namespace DDConnect
 
         public static string MirrorPath => mirrorPath;
 
-        public static string LevelPath(int level) => Path.Combine(dataDir, "Level " + level);
+        public static string LevelPath(int level) =>
+            level == Patches.CustomLevel
+                ? Patches.CustomDatabasePath() ?? Path.Combine(dataDir, level.ToString())
+                : Path.Combine(dataDir, "Level " + level);
 
         public static void Init(ManualLogSource logger, string persistentDataPath, string mirrorFile, int debounce, bool sendEditorTables, Func<int> currentLevel)
         {

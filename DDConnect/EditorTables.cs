@@ -130,7 +130,7 @@ namespace DDConnect
         /// <summary>Returns null on success, otherwise the reason the table was refused.</summary>
         private static string Adopt(UnityEngine.Object button, int level, string name)
         {
-            if (button == null || level <= 0) return "Open a case in the game first, then run the statement again.";
+            if (button == null || level == 0) return "Open a case in the game first, then run the statement again.";
             if (!NamePattern.IsMatch(name))
             {
                 return "Table names must start with a letter or underscore and use only letters, digits and underscores (64 characters at most).";
