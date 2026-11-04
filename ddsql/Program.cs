@@ -17,6 +17,8 @@ namespace DdSql
             "                                 run a SELECT in the game and save the result as a table\n" +
             "  ddsql drop NAME [NAME...]      delete tables, as the game's own Delete table does\n" +
             "  ddsql close-windows            close the windows that fill the taskbar\n" +
+            "  ddsql tables                   list the tables\n" +
+            "  ddsql schema [NAME]            how the tables are defined\n" +
             "  ddsql state                    level, desktop icons and tables\n" +
             "  ddsql connection test          check that the game can be reached\n" +
             "\n" +
@@ -27,6 +29,7 @@ namespace DdSql
             "      --max-rows N      stop after N rows (default 1000, at most 50000)\n" +
             "      --no-header       leave out the column names (table and csv)\n" +
             "  -c, --connection FILE use this bridge.json (or set DDSQL_CONNECTION)\n" +
+            "      --wait SECONDS    keep trying to reach the game for this long\n" +
             "  -h, --help            show this text\n" +
             "      --version         show the version\n" +
             "\n" +
@@ -69,8 +72,7 @@ namespace DdSql
                 }
 
                 OutputFormat format = options.Format ?? (outputRedirected ? OutputFormat.Json : OutputFormat.Table);
-                BridgeInfo info = BridgeLocator.Load(options.Connection);
-                using BridgeClient client = BridgeClient.Connect(info);
+                using BridgeClient client = ConnectWaiting(options, out BridgeInfo info);
                 var runner = new Runner(client, options, format, stdout);
 
                 switch (options.Mode)
@@ -79,6 +81,12 @@ namespace DdSql
                         return TestConnection(client, info, stdout);
                     case Mode.State:
                         runner.PrintState(client.State());
+                        return ExitCodes.Ok;
+                    case Mode.Tables:
+                        runner.Tables();
+                        return ExitCodes.Ok;
+                    case Mode.Schema:
+                        runner.Schema(options.SchemaName);
                         return ExitCodes.Ok;
                     case Mode.Drop:
                         foreach (string name in options.DropNames) runner.Drop(name);
@@ -104,6 +112,24 @@ namespace DdSql
             {
                 stderr.WriteLine("ddsql: " + ex.Message);
                 return ex.ExitCode;
+            }
+        }
+
+        /// <summary>Connects, retrying while the game is not reachable yet for as long as --wait allows.</summary>
+        private static BridgeClient ConnectWaiting(Options options, out BridgeInfo info)
+        {
+            DateTime deadline = DateTime.UtcNow + options.Wait;
+            while (true)
+            {
+                try
+                {
+                    info = BridgeLocator.Load(options.Connection);
+                    return BridgeClient.Connect(info);
+                }
+                catch (DdSqlException ex) when (ex.ExitCode == ExitCodes.Unreachable && DateTime.UtcNow < deadline)
+                {
+                    Thread.Sleep(500);
+                }
             }
         }
 

@@ -93,10 +93,9 @@ namespace DdSql
                     stdout.WriteLine(Help);
                     return null;
                 case ".tables":
-                    return Guard(() => runner.Execute(
-                        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite!_%' ESCAPE '!' ORDER BY name"));
+                    return Guard(runner.Tables);
                 case ".schema":
-                    return Guard(() => Schema(argument));
+                    return Guard(() => runner.Schema(argument.Length > 0 ? argument : null));
                 case ".state":
                     return Guard(() => runner.PrintState(runner.FetchState()));
                 case ".save":
@@ -113,21 +112,6 @@ namespace DdSql
                     stderr.WriteLine($"Error: unknown command {parts[0]}. Type .help for a list.");
                     return null;
             }
-        }
-
-        private void Schema(string name)
-        {
-            if (name.Length > 0 && !Identifier.IsMatch(name)) throw new DdSqlException(ExitCodes.Failed, "That is not a table name.");
-            string filter = name.Length > 0 ? $" AND name = '{name}'" : "";
-            QueryResult result = runner.Fetch(
-                "SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND type IN ('table', 'view')" + filter + " ORDER BY name");
-            foreach (object?[] row in result.Rows)
-            {
-                string sql = row[0]?.ToString() ?? "";
-                foreach (string line in sql.Split('\n')) stdout.WriteLine(Output.Clean(line));
-                stdout.WriteLine(";");
-            }
-            if (result.Rows.Count == 0) stdout.WriteLine("(nothing found)");
         }
 
         private void SaveLast(string name)

@@ -100,7 +100,7 @@ Request field: `name` (a table name, same rules as `save`).
 {"id":5,"ok":true,"table":"red_cars","message":"Deleted table red_cars."}
 ```
 
-Deletes a table exactly as the game's "Delete table" menu entry does: the saved query, the icon and its position, the table's window and the table itself. Whatever the game refuses to delete comes back as `game_refused`; tables it allows include more than ones you made, so use a throwaway save. There is no way to delete with `query`.
+Deletes a table exactly as the game's "Delete table" menu entry does: the saved query, the icon and its position, the table's window and the table itself. The game locks some tables against deletion, and those come back as `game_refused`. A table the game does not lock can be deleted, including one of the case's own; downloading the case again in the game brings it back. There is no way to delete with `query`.
 
 ### `close_windows`
 

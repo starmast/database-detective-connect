@@ -123,6 +123,75 @@ namespace DdSql.Tests
         }
 
         [Fact]
+        public void TablesListsThemWithAReadOnlyQuery()
+        {
+            using var bridge = new FakeBridge(r => FakeBridge.QueryReply("[\"name\"]", "[[\"crops\"]]"));
+            Outcome o = RunCli(bridge, "", true, "tables");
+            Assert.Equal(0, o.Exit);
+            Assert.Contains("\"crops\"", o.Out);
+            Assert.Contains("sqlite_master", bridge.Requests[0]);
+        }
+
+        [Fact]
+        public void SchemaPrintsTheDefinitionAsTextInATerminalAndColumnsWhenPiped()
+        {
+            using var bridge = new FakeBridge(r => r.GetProperty("sql").GetString()!.StartsWith("SELECT name, sql")
+                ? FakeBridge.QueryReply("[\"name\",\"sql\"]", "[[\"crops\",\"CREATE TABLE crops (id INT)\"]]")
+                : FakeBridge.QueryReply("[\"sql\"]", "[[\"CREATE TABLE crops (id INT)\"]]"));
+            Outcome terminal = RunCli(bridge, "", false, "schema", "crops");
+            Assert.Contains("CREATE TABLE crops (id INT)\n;", terminal.Out);
+            Outcome piped = RunCli(bridge, "", true, "schema", "crops");
+            Assert.Contains("\"columns\":[\"name\",\"sql\"]", piped.Out.Replace(" ", ""));
+        }
+
+        [Fact]
+        public void SchemaRejectsAnythingButATableName()
+        {
+            using var bridge = new FakeBridge(r => FakeBridge.Ok());
+            Outcome o = RunCli(bridge, "", true, "schema", "x'; DROP TABLE y");
+            Assert.Equal(ExitCodes.Usage, o.Exit);
+            Assert.Empty(bridge.Requests);
+        }
+
+        [Fact]
+        public void WaitGivesUpWithExitThreeWhenTheGameNeverAppears()
+        {
+            string missing = Path.Combine(Path.GetTempPath(), "ddsql-missing-" + Guid.NewGuid().ToString("N"), "bridge.json");
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            Outcome o = RunCli(null, "", true, "--connection", missing, "--wait", "1", "connection", "test");
+            Assert.Equal(ExitCodes.Unreachable, o.Exit);
+            Assert.True(timer.ElapsedMilliseconds >= 900, "should have kept trying for about a second");
+        }
+
+        [Fact]
+        public void WaitConnectsOnceTheGameAppears()
+        {
+            using var bridge = new FakeBridge(r => FakeBridge.Ok("\"protocol\":1,\"version\":\"0.1.1\",\"level\":3,\"inLevel\":true"));
+            string late = Path.Combine(Path.GetTempPath(), "ddsql-late-" + Guid.NewGuid().ToString("N") + ".json");
+            try
+            {
+                Task.Run(async () =>
+                {
+                    await Task.Delay(700);
+                    File.Copy(bridge.BridgeFile, late);
+                });
+                Outcome o = RunCli(null, "", false, "--connection", late, "--wait", "10", "connection", "test");
+                Assert.Equal(0, o.Exit);
+                Assert.Contains("Connected to DD Connect", o.Out);
+            }
+            finally
+            {
+                File.Delete(late);
+            }
+        }
+
+        [Fact]
+        public void WaitNeedsASensibleNumber()
+        {
+            Assert.Equal(ExitCodes.Usage, RunCli(null, "", true, "--wait", "0", "state").Exit);
+        }
+
+        [Fact]
         public void CloseWindowsReportsHowManyWereClosed()
         {
             using var bridge = new FakeBridge(r => Cmd(r) == "close_windows" ? FakeBridge.Ok("\"closed\":12") : FakeBridge.Error("bad_request", "?"));

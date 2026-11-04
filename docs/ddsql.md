@@ -19,7 +19,11 @@ ddsql -f queries.sql                    run a file of statements
 ddsql -                                 run SQL read from standard input
 ddsql -q "SELECT 1" --format json       table, json, ndjson or csv
 ddsql state                             level, desktop icons and tables
+ddsql tables                            list the tables
+ddsql schema [NAME]                     how the tables are defined
 ```
+
+`ddsql --wait 60 -q "SELECT 1"` keeps trying to reach the game for up to 60 seconds, which suits scripts that start the game first. `schema` prints the definitions as text in a terminal; with `--format json` (or when piped) you get `name` and `sql` columns instead.
 
 Options: `--format` (`table`, `json`, `ndjson`, `csv`), `--max-rows N` (default 1000, at most 50000), `--no-header`, and `--connection FILE` (or the `DDSQL_CONNECTION` environment variable) to use a specific `bridge.json`.
 
@@ -55,7 +59,7 @@ ddsql close-windows                     close the windows that fill the taskbar
 ddsql drop red_cars blue_cars           delete tables, as the game's "Delete table" does
 ```
 
-`drop` goes through the game's own delete, so it removes whatever the game would let you delete there, which can include the case's own tables. Use it on a throwaway save. In the prompt these are `.close` and `.drop NAME`.
+`drop` goes through the game's own delete, so the game's locks apply: a table it won't let you delete in the game is refused here too. A table it does allow can be deleted, including one of the case's own; downloading the case again in the game brings it back. In the prompt these are `.close` and `.drop NAME`.
 
 ## Exit codes
 

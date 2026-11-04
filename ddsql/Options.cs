@@ -10,6 +10,8 @@ namespace DdSql
         State,
         Drop,
         CloseWindows,
+        Tables,
+        Schema,
         Help,
         Version,
     }
@@ -29,6 +31,12 @@ namespace DdSql
         /// <summary>The tables named after <c>drop</c>.</summary>
         public List<string> DropNames { get; } = new List<string>();
 
+        /// <summary>The table named after <c>schema</c>, or null for all of them.</summary>
+        public string? SchemaName { get; private set; }
+
+        /// <summary>How long to keep trying to reach the game before giving up; zero means one attempt.</summary>
+        public TimeSpan Wait { get; private set; }
+
         /// <summary>Null means "decide from whether output is a terminal".</summary>
         public OutputFormat? Format { get; private set; }
 
@@ -43,7 +51,7 @@ namespace DdSql
 
             void Choose(Mode mode)
             {
-                if (modeChosen) throw Usage("Use only one of -q, -f, - (stdin), 'state', 'drop', 'close-windows' or 'connection test'.");
+                if (modeChosen) throw Usage("Use only one of -q, -f, - (stdin), 'state', 'tables', 'schema', 'drop', 'close-windows' or 'connection test'.");
                 o.Mode = mode;
                 modeChosen = true;
             }
@@ -115,7 +123,18 @@ namespace DdSql
                     case "drop":
                         Choose(Mode.Drop);
                         while (i + 1 < args.Length && !args[i + 1].StartsWith('-')) o.DropNames.Add(args[++i]);
-                        if (o.DropNames.Count == 0) throw Usage("drop needs the name of a table: ddsql drop red_cars");
+                        break;
+                    case "--wait":
+                        string seconds = Value();
+                        if (!int.TryParse(seconds, out int wait) || wait < 1 || wait > 3600) throw Usage("--wait needs a number of seconds from 1 to 3600.");
+                        o.Wait = TimeSpan.FromSeconds(wait);
+                        break;
+                    case "tables":
+                        Choose(Mode.Tables);
+                        break;
+                    case "schema":
+                        Choose(Mode.Schema);
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-')) o.SchemaName = args[++i];
                         break;
                     case "close-windows":
                         Choose(Mode.CloseWindows);
@@ -130,6 +149,8 @@ namespace DdSql
                 }
             }
 
+            if (o.Mode == Mode.Drop && o.DropNames.Count == 0) throw Usage("drop needs the name of a table: ddsql drop red_cars");
+            if (o.Mode == Mode.Schema && o.SchemaName != null && !Runner.IsIdentifier(o.SchemaName)) throw Usage("That is not a table name.");
             if (o.SaveName != null && o.Mode is not (Mode.Query or Mode.File or Mode.Stdin))
             {
                 throw Usage("--save NAME needs a query to save: use it with -q, -f or -.");

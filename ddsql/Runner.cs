@@ -84,6 +84,37 @@ namespace DdSql
             else stdout.WriteLine(Output.Clean(message));
         }
 
+        private static readonly System.Text.RegularExpressions.Regex Identifier = new("^[A-Za-z_][A-Za-z0-9_]*$");
+
+        internal static bool IsIdentifier(string name) => Identifier.IsMatch(name);
+
+        /// <summary>Lists the tables in the case.</summary>
+        public void Tables() =>
+            Execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite!_%' ESCAPE '!' ORDER BY name");
+
+        /// <summary>
+        /// Shows how tables are defined. A terminal gets the CREATE statements as text; json, ndjson and csv get
+        /// name and sql columns, so a script can read them.
+        /// </summary>
+        public void Schema(string? name)
+        {
+            if (name != null && !IsIdentifier(name)) throw new DdSqlException(ExitCodes.Usage, "That is not a table name.");
+            string filter = name != null ? $" AND name = '{name}'" : "";
+            if (Format != OutputFormat.Table)
+            {
+                Execute("SELECT name, sql FROM sqlite_master WHERE sql IS NOT NULL AND type IN ('table', 'view')" + filter + " ORDER BY name");
+                return;
+            }
+
+            QueryResult result = Fetch("SELECT sql FROM sqlite_master WHERE sql IS NOT NULL AND type IN ('table', 'view')" + filter + " ORDER BY name");
+            foreach (object?[] row in result.Rows)
+            {
+                foreach (string line in (row[0]?.ToString() ?? "").Split('\n')) stdout.WriteLine(Output.Clean(line));
+                stdout.WriteLine(";");
+            }
+            if (result.Rows.Count == 0) stdout.WriteLine("(nothing found)");
+        }
+
         public void CloseWindows()
         {
             int closed = client.CloseWindows();
