@@ -24,9 +24,9 @@ namespace DDConnect
         public static BridgeResult Run(string sql, int maxRows)
         {
             int level = MainThread.Level;
-            if (level <= 0) return BridgeResult.Fail("not_in_level", "Open a case in the game first.");
+            if (level == 0) return BridgeResult.Fail("not_in_level", "Open a case in the game first.");
             string path = MirrorService.LevelPath(level);
-            if (!File.Exists(path)) return BridgeResult.Fail("not_in_level", $"Level {level} has no database yet.");
+            if (!File.Exists(path)) return BridgeResult.Fail("not_in_level", $"The case (level {level}) has no database yet.");
             if (string.IsNullOrWhiteSpace(sql)) return BridgeResult.Fail("bad_request", "The query is empty.");
             maxRows = maxRows <= 0 ? DefaultMaxRows : Math.Min(maxRows, HardMaxRows);
 

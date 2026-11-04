@@ -46,7 +46,7 @@ namespace DDConnect
         public static void Init(ManualLogSource logger) => log = logger;
 
         /// <summary>Tables in the mirror that this session did not put there. Runs on any thread, with MirrorService.Lock held.</summary>
-        public static List<string> Scan(string mirrorPath, ICollection<string> known, int level)
+        public static List<string> Scan(string mirrorPath, ICollection<string> known, int level, string sourcePath)
         {
             IntPtr db = IntPtr.Zero;
             try
@@ -55,6 +55,9 @@ namespace DDConnect
                 // Tables made for a different case than the one now loaded would land in the wrong database.
                 long mirrorLevel = NativeSqlite.QueryInt64(db, "SELECT level FROM _mirror_info LIMIT 1;");
                 if (mirrorLevel != level) return new List<string>();
+                // A workshop case is always level -1, so also check it is the same case's database.
+                string mirroredSource = NativeSqlite.QueryStrings(db, "SELECT source_path FROM _mirror_info LIMIT 1;").FirstOrDefault();
+                if (!string.Equals(mirroredSource, sourcePath, StringComparison.OrdinalIgnoreCase)) return new List<string>();
                 return NativeSqlite.QueryStrings(db,
                         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite!_%' ESCAPE '!' ORDER BY rowid;")
                     .Where(name => !known.Contains(name))
@@ -130,7 +133,7 @@ namespace DDConnect
         /// <summary>Returns null on success, otherwise the reason the table was refused.</summary>
         private static string Adopt(UnityEngine.Object button, int level, string name)
         {
-            if (button == null || level <= 0) return "Open a case in the game first, then run the statement again.";
+            if (button == null || level == 0) return "Open a case in the game first, then run the statement again.";
             if (!NamePattern.IsMatch(name))
             {
                 return "Table names must start with a letter or underscore and use only letters, digits and underscores (64 characters at most).";

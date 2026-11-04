@@ -75,7 +75,7 @@ namespace DdSql
             }
         }
 
-        private string Where() => runner.Level > 0 ? $"Level {runner.Level}" : "no case open";
+        private string Where() => Runner.DescribeLevel(runner.Level);
 
         /// <summary>Returns null to keep going, or the exit code to stop with.</summary>
         private int? RunDotCommand(string command)
