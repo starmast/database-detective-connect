@@ -4,7 +4,7 @@ Solve **Database Detective: Minor Crimes Division** cases from your favorite SQL
 
 DD Connect is a small mod that keeps a copy of the case you're playing in one file. You open it once in VS Code (or any SQLite editor) and it stays up to date as you play: new searches, saved tables, website downloads and level changes all show up automatically.
 
-Your save is never touched. The copy is read-only, so nothing you do in your editor can break the game.
+The file is only a copy, so changing it can't break the game. Your save changes in only two cases, and you start both yourself: when you create a new table in your editor, DD Connect adds that table to your case (see [Create tables in your editor](#create-tables-in-your-editor)), and when you ask [`ddsql`](#ddsql-a-sql-prompt-for-the-running-game) to `--save` a search or to `drop` a table. You can turn both off in the [settings](docs/settings.md).
 
 > **Unofficial fan mod.** DD Connect is not affiliated with, endorsed by or supported by the makers of Database Detective. Please don't send them bug reports about it. See the [disclaimer](#disclaimer).
 
@@ -104,54 +104,51 @@ SQLTools gives you table and column autocomplete, a results grid and query histo
 4. Connect. If SQLTools offers to install the SQLite driver's dependencies, accept.
 5. Open a new `.sql` file, write a query, and run it with **Ctrl+E Ctrl+E** (**Cmd+E Cmd+E** on macOS).
 
-<details>
-<summary>Prefer settings.json?</summary>
+Using another editor (DB Browser, DBeaver, DataGrip, Excel, Power BI)? See [Editors](docs/editors.md).
 
-```json
-"sqltools.connections": [
-  {
-    "name": "Database Detective",
-    "driver": "SQLite",
-    "database": "C:/Users/YOUR-NAME/AppData/LocalLow/HsuCorp/copOS/Connect/current.db" // use your system's path
-  }
-]
+---
+
+## Create tables in your editor
+
+Run a normal `CREATE TABLE` in your editor and the table appears on your desktop in the game, as if you had saved it from a search.
+
+```sql
+CREATE TABLE red_cars AS
+SELECT * FROM vehicles WHERE color = 'red';
 ```
 
-</details>
+Within a second or two the table gets an icon in the game. It's saved with your case like any other table. The game's limits apply (valid name, 1 to 50,000 rows, 60 icons), and only new tables are sent. Something didn't arrive? Run `SELECT * FROM _connect_results;` to see why.
 
-### Other editors
-
-Any tool that opens SQLite files works:
-
-| Editor | How |
-|---|---|
-| **SQLite3 Editor** (VS Code) | Open `current.db` in VS Code. Little setup needed. |
-| **SQLite Viewer** (VS Code) | Open `current.db` to browse tables (viewing only). |
-| **DB Browser for SQLite**, **DBeaver**, **DataGrip** | Open `current.db` as a SQLite database. |
-| **Excel**, **Power BI** (ODBC, Windows) | Install the free [SQLite ODBC driver](http://www.ch-werner.de/sqliteodbc/) (`sqliteodbc_w64.exe`). Then add a data source in **ODBC Data Sources (64-bit)** that points at `current.db`. |
+More in [Creating tables in your editor](docs/editor-tables.md).
 
 ---
 
-## Tips
+## ddsql: a SQL prompt for the running game
 
-- **Which case am I looking at?** Run `SELECT * FROM _mirror_info;`. It shows the level and when the copy was last updated.
-- **New table not showing up?** Refresh your editor's table list. Editors remember the table list, but the data itself is already up to date.
-- **What are `result_1`, `result_2`…?** Those are your unsaved in-game searches.
-- **Keeping results between queries.** You can't save tables into the copy, but you can use `WITH name AS (...)` or `CREATE TEMP TABLE name AS ...`. Temp tables last until your editor disconnects.
-- **Pasting queries back into the game.** Your editor allows any SQLite, but the in-game search box blocks some words: `DROP`, `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, `TABLE` and `sqlite_master`.
-- **Seeing Level 0 on the main menu?** That's normal. The copy switches to your case once it loads.
+`ddsql` is a small command-line tool. It connects to the game while you play and lets you type queries in a terminal, like `snow sql` or `psql`. Results are always current, and it works well in scripts and for AI agents.
+
+1. Download `ddsql-win-x64.exe`, `ddsql-linux-x64` or `ddsql-osx-arm64` from the [latest release](../../releases/latest). Rename it to `ddsql` (or `ddsql.exe`) and put it somewhere on your `PATH`. On Linux and macOS, run `chmod +x ddsql`.
+2. In `BepInEx/config/dev.ddconnect.cfg`, under `[Bridge]`, set `Enabled = true`. It's off by default because it opens a port on your own computer.
+3. Start the game, open a case, and check: `ddsql connection test`.
+
+```text
+ddsql                                   open the prompt
+ddsql -q "SELECT * FROM vehicles LIMIT 5"
+ddsql -q "SELECT * FROM vehicles WHERE color = 'red'" --save red_cars
+```
+
+Queries are read-only. The only way to create a table is `--save NAME`, which runs the search inside the game so its rules apply. See [ddsql](docs/ddsql.md) for the prompt, output formats, cleanup commands (`drop`, `close-windows`) and exit codes.
 
 ---
 
-## Settings
+## More
 
-Optional. Edit `BepInEx/config/dev.ddconnect.cfg` in the game folder, which is created on first run.
-
-| Setting | Default | What it does |
-|---|---|---|
-| `Enabled` | `true` | Turn DD Connect on or off. |
-| `MirrorPath` | *(empty)* | Where to put the copy. Empty means the `Connect/current.db` location above. |
-| `DebounceMs` | `300` | How long to wait after the game's last change before updating the copy. |
+- [Editors](docs/editors.md): DB Browser, DBeaver, DataGrip, Excel and Power BI
+- [Creating tables in your editor](docs/editor-tables.md): limits, scratch tables, what to do when a table is refused
+- [ddsql](docs/ddsql.md): the full command-line guide
+- [Settings](docs/settings.md): the config file
+- [Tips](docs/tips.md)
+- [Bridge protocol](docs/bridge-protocol.md): for tool authors
 
 ---
 
@@ -167,7 +164,9 @@ Open `BepInEx/LogOutput.log` in the game folder and look for lines starting with
 - A `DD Connect` error line: please open an issue and include the log.
 
 **My editor says the database is read-only.**
-That's intended. The copy can be read but not changed.
+Either `SendTables` is set to `false` (see [Settings](docs/settings.md)), which makes the copy read-only on purpose, or an older version of DD Connect left the file marked read-only. Starting the game once with `SendTables` on clears that.
+
+More fixes: [creating tables](docs/editor-tables.md#my-table-didnt-show-up) and [ddsql](docs/ddsql.md#troubleshooting).
 
 ---
 
@@ -176,12 +175,6 @@ That's intended. The copy can be read but not changed.
 Delete `BepInEx/plugins/DDConnect` from the game folder. You can also delete the `Connect` folder from the path in [Check it works](#3-check-it-works).
 
 To remove BepInEx completely on Linux or macOS, also clear the Steam Launch Options.
-
----
-
-## Coming later
-
-Run a query from your editor *inside* the game, so it opens as an in-game result window or saved table.
 
 ---
 

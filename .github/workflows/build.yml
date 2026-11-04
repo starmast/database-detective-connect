@@ -42,6 +42,24 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: dotnet build DDConnect -c Release -p:Version="$VERSION" -p:ContinuousIntegrationBuild=true
 
+      - name: Test ddsql
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: dotnet test ddsql.Tests -c Release -p:Version="$VERSION"
+
+      - name: Publish ddsql
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p ddsql-package
+          for rid in win-x64 linux-x64 osx-arm64; do
+            dotnet publish ddsql -c Release -r "$rid" --self-contained \
+              -p:PublishSingleFile=true -p:PublishTrimmed=true -p:Version="$VERSION" -p:ContinuousIntegrationBuild=true -o "publish/$rid"
+          done
+          cp publish/win-x64/ddsql.exe ddsql-package/ddsql-win-x64.exe
+          cp publish/linux-x64/ddsql ddsql-package/ddsql-linux-x64
+          cp publish/osx-arm64/ddsql ddsql-package/ddsql-osx-arm64
+
       - name: Stage package
         run: |
           mkdir -p package/BepInEx/plugins/DDConnect
@@ -51,6 +69,12 @@ jobs:
         with:
           name: DDConnect-${{ steps.version.outputs.version }}
           path: package/
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ddsql-${{ steps.version.outputs.version }}
+          path: ddsql-package/
           if-no-files-found: error
 
   release:
@@ -65,6 +89,11 @@ jobs:
           name: DDConnect-${{ needs.build.outputs.version }}
           path: package
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: ddsql-${{ needs.build.outputs.version }}
+          path: ddsql-package
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -72,7 +101,7 @@ jobs:
         run: |
           zip_name="DDConnect-$VERSION.zip"
           (cd package && zip -r "../$zip_name" BepInEx)
-          gh release create "$GITHUB_REF_NAME" "$zip_name" \
+          gh release create "$GITHUB_REF_NAME" "$zip_name" ddsql-package/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "DD Connect $VERSION" \
             --generate-notes \

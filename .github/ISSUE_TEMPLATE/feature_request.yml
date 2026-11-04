@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the idea! Please check the README's [Coming later](https://github.com/starmast/database-detective-connect#coming-later) section and existing issues first, in case it's already planned.
+        Thanks for the idea! Please check the [README](https://github.com/starmast/database-detective-connect#readme) and existing issues first, in case it's already planned.
 
   - type: textarea
     id: problem
