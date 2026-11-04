@@ -47,6 +47,7 @@ namespace DDConnect
 
         // Windows that hold a taskbar button, and how the game closes one.
         private static FieldInfo windowsToTaskbars;
+        private static MethodInfo getTaskbar;
         private static Type panelType;
         private static MethodInfo closePanel;
 
@@ -109,7 +110,9 @@ namespace DDConnect
             clickDragClearSelection = Method(clickDragType, "ClearSelectedIcons");
             highlightKeywords = Method(queryInputUtilsType, "HighlightKeywords");
 
-            windowsToTaskbars = Field(Resolve("TaskbarManager"), "windowsToTaskbars");
+            Type taskbarManager = Resolve("TaskbarManager");
+            windowsToTaskbars = Field(taskbarManager, "windowsToTaskbars");
+            getTaskbar = Method(taskbarManager, "GetTaskbar");
             panelType = Resolve("Panel");
             closePanel = Method(panelType, "ClosePanel");
         }
@@ -225,6 +228,17 @@ namespace DDConnect
                 closed++;
             }
             return closed;
+        }
+
+        /// <summary>
+        /// True while taskbar buttons are still sliding away after their windows closed. The game counts them toward
+        /// "taskbar is full" until the animation ends, so a search started right after closing would be refused.
+        /// </summary>
+        public static bool TaskbarDraining()
+        {
+            var windows = windowsToTaskbars.GetValue(null) as System.Collections.IDictionary;
+            var taskbar = (Component)Invoke(getTaskbar, null, null);
+            return taskbar != null && taskbar.transform.childCount > (windows?.Count ?? 0);
         }
 
         public static void Notify(UnityEngine.Object button, string message)

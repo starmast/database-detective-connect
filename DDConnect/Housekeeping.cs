@@ -9,6 +9,8 @@ namespace DDConnect
     /// </summary>
     internal static class Housekeeping
     {
+        private const float DrainTimeoutSeconds = 5f;
+
         private static readonly Regex NamePattern = new Regex("^[A-Za-z_][A-Za-z0-9_]{0,63}$");
 
         public static IEnumerator Drop(MainThread.Pending pending, string name)
@@ -42,6 +44,13 @@ namespace DDConnect
         public static IEnumerator CloseWindows(MainThread.Pending pending)
         {
             int closed = GameUi.CloseWindows();
+            // Reply only once the taskbar has room again, so the next command can rely on it.
+            float waited = 0f;
+            while (closed > 0 && GameUi.TaskbarDraining() && waited < DrainTimeoutSeconds)
+            {
+                yield return null;
+                waited += UnityEngine.Time.unscaledDeltaTime;
+            }
             pending.Result = BridgeResult.Success(w => w.Prop("closed", closed));
             yield break;
         }
