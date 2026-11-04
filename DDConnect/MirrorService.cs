@@ -43,6 +43,10 @@ namespace DDConnect
         private static volatile string writtenSignature;
         private static volatile string scannedSignature;
 
+        // The database file the mirror was last copied from. A workshop case keeps the same level number (-1) whichever
+        // case is open, so a change of file is how a switch between cases shows up.
+        private static volatile string mirroredSource;
+
         public static string MirrorPath => mirrorPath;
 
         public static string LevelPath(int level) =>
@@ -59,7 +63,7 @@ namespace DDConnect
             sendTables = sendEditorTables;
             getLevel = currentLevel;
             timer = new Timer(_ => OnTimer(), null, Timeout.Infinite, Timeout.Infinite);
-            if (sendTables) watchTimer = new Timer(_ => OnWatch(), null, EditorPollMs, EditorPollMs);
+            watchTimer = new Timer(_ => OnWatch(), null, EditorPollMs, EditorPollMs);
         }
 
         /// <summary>Thread-safe and cheap: may be called from the game's background query thread.</summary>
@@ -85,6 +89,12 @@ namespace DDConnect
         private static void OnWatch()
         {
             if (knownTables == null) return;
+            if (mirroredSource != null && !string.Equals(mirroredSource, LevelPath(getLevel()), StringComparison.OrdinalIgnoreCase))
+            {
+                MarkDirty("case change");
+                return;
+            }
+            if (!sendTables) return;
             string signature = Signature();
             if (signature != writtenSignature && signature != scannedSignature) MarkDirty("editor change");
         }
@@ -162,6 +172,7 @@ namespace DDConnect
                     if (!sendTables) SetReadOnly(true);
                 }
                 writtenSignature = Signature();
+                mirroredSource = source;
             }
             log.LogInfo($"Mirrored Level {level} ({reason}) in {sw.ElapsedMilliseconds} ms");
         }
@@ -176,7 +187,7 @@ namespace DDConnect
             string signature = Signature();
             if (signature == writtenSignature || signature == scannedSignature) return false;
 
-            List<string> found = EditorTables.Scan(mirrorPath, knownTables, level);
+            List<string> found = EditorTables.Scan(mirrorPath, knownTables, level, LevelPath(level));
             scannedSignature = signature;
             if (found.Count == 0) return false;
 
