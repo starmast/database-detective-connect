@@ -55,7 +55,7 @@ A request with a missing or wrong token gets an `auth` error and the connection 
 ### `ping`
 
 ```json
-{"id":1,"ok":true,"protocol":1,"version":"0.2.0","level":3,"inLevel":true}
+{"id":1,"ok":true,"protocol":1,"version":"0.2.1","level":3,"inLevel":true}
 ```
 
 `level` is 0 on the main menu. `inLevel` is true when a case is open.
