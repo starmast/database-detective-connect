@@ -4,7 +4,7 @@ Solve **Database Detective: Minor Crimes Division** cases from your favorite SQL
 
 DD Connect is a small mod that keeps a copy of the case you're playing in one file. You open it once in VS Code (or any SQLite editor) and it stays up to date as you play: new searches, saved tables, website downloads and level changes all show up automatically.
 
-Your save is never touched. The copy is read-only, so nothing you do in your editor can break the game.
+The file is only a copy, so changing it can't break the game. Your save changes in just one case: when you create a new table in your editor, DD Connect adds that table to your case (see [Create tables in your editor](#create-tables-in-your-editor)). You can turn that off in the [settings](#settings), which makes the copy read-only.
 
 > **Unofficial fan mod.** DD Connect is not affiliated with, endorsed by or supported by the makers of Database Detective. Please don't send them bug reports about it. See the [disclaimer](#disclaimer).
 
@@ -132,12 +132,40 @@ Any tool that opens SQLite files works:
 
 ---
 
+## Create tables in your editor
+
+Run a normal `CREATE TABLE` in your editor and the table appears on your desktop in the game, as if you had saved it from a search.
+
+```sql
+CREATE TABLE red_cars AS
+SELECT * FROM vehicles WHERE color = 'red';
+```
+
+A table with columns you define yourself works too:
+
+```sql
+CREATE TABLE my_notes (suspect TEXT, note TEXT);
+INSERT INTO my_notes VALUES ('Dana Hill', 'Seen near the warehouse');
+```
+
+Within a second or two the table gets an icon in the game, and a message tells you what arrived. It's saved with your case like any other table.
+
+Things to know:
+- **Only new tables are sent.** Changing a table that already exists in the copy does nothing, and the next update undoes it.
+- **Your case needs to be open in the game.** On the main menu, or with the game closed, new tables are not sent and are removed at the next update.
+- **The game keeps the rows, not the query.** The table is a snapshot of the rows when you ran the statement. Right-clicking its icon has no "Restore query" entry.
+- **The game's limits apply.** The name must start with a letter or underscore and use only letters, digits and underscores. The table can't be empty or have more than 50,000 rows, the name can't be one the game reserves or already uses, and your desktop holds at most 60 icons.
+- **Something refused?** Run `SELECT * FROM _connect_results;` to see why. Refused tables are removed at the next update, so fix the statement and run it again.
+- **Rows bypass the in-game search rules.** The words the search box blocks (see Tips) don't matter here, because the game receives data you built in your own editor.
+
+---
+
 ## Tips
 
 - **Which case am I looking at?** Run `SELECT * FROM _mirror_info;`. It shows the level and when the copy was last updated.
 - **New table not showing up?** Refresh your editor's table list. Editors remember the table list, but the data itself is already up to date.
 - **What are `result_1`, `result_2`…?** Those are your unsaved in-game searches.
-- **Keeping results between queries.** You can't save tables into the copy, but you can use `WITH name AS (...)` or `CREATE TEMP TABLE name AS ...`. Temp tables last until your editor disconnects.
+- **Scratch tables.** Every new table you create in the copy is sent to the game. For work you don't want on your desktop, use `WITH name AS (...)` or `CREATE TEMP TABLE name AS ...`. Temp tables last until your editor disconnects.
 - **Pasting queries back into the game.** Your editor allows any SQLite, but the in-game search box blocks some words: `DROP`, `INSERT`, `UPDATE`, `DELETE`, `REPLACE`, `TABLE` and `sqlite_master`.
 - **Seeing Level 0 on the main menu?** That's normal. The copy switches to your case once it loads.
 
@@ -152,6 +180,7 @@ Optional. Edit `BepInEx/config/dev.ddconnect.cfg` in the game folder, which is c
 | `Enabled` | `true` | Turn DD Connect on or off. |
 | `MirrorPath` | *(empty)* | Where to put the copy. Empty means the `Connect/current.db` location above. |
 | `DebounceMs` | `300` | How long to wait after the game's last change before updating the copy. |
+| `SendTables` (in `[Editor]`) | `true` | Let tables you create in your editor appear in the game. Turn it off to make the copy read-only again. |
 
 ---
 
@@ -167,7 +196,10 @@ Open `BepInEx/LogOutput.log` in the game folder and look for lines starting with
 - A `DD Connect` error line: please open an issue and include the log.
 
 **My editor says the database is read-only.**
-That's intended. The copy can be read but not changed.
+Either `SendTables` is set to `false` (see [Settings](#settings)), which makes the copy read-only on purpose, or an older version of DD Connect left the file marked read-only. Starting the game once with `SendTables` on clears that.
+
+**My table didn't show up in the game.**
+Run `SELECT * FROM _connect_results;` in your editor. It lists each table that was sent and why any were refused. See [Create tables in your editor](#create-tables-in-your-editor).
 
 ---
 
@@ -176,12 +208,6 @@ That's intended. The copy can be read but not changed.
 Delete `BepInEx/plugins/DDConnect` from the game folder. You can also delete the `Connect` folder from the path in [Check it works](#3-check-it-works).
 
 To remove BepInEx completely on Linux or macOS, also clear the Steam Launch Options.
-
----
-
-## Coming later
-
-Run a query from your editor *inside* the game, so it opens as an in-game result window or saved table.
 
 ---
 
