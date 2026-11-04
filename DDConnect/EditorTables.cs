@@ -118,13 +118,12 @@ namespace DDConnect
                 Record(name, error);
             }
 
-            if (button == null) return;
+            // A new icon is feedback enough when everything arrived; only speak up when something was refused.
             int failed = batch.Names.Count - added;
-            string summary = failed == 0
-                ? (added == 1 ? "Received 1 table from your SQL editor." : $"Received {added} tables from your SQL editor.")
-                : added == 0 && failed == 1
-                    ? "Could not add the table from your SQL editor: " + firstError
-                    : $"Received {added} of {batch.Names.Count} tables from your SQL editor. In your editor, run SELECT * FROM _connect_results; to see why the rest were refused.";
+            if (button == null || failed == 0) return;
+            string summary = added == 0 && failed == 1
+                ? "Could not add the table from your SQL editor: " + firstError
+                : $"Received {added} of {batch.Names.Count} tables from your SQL editor. In your editor, run SELECT * FROM _connect_results; to see why the rest were refused.";
             GameUi.Notify(button, summary);
         }
 

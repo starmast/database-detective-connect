@@ -16,6 +16,7 @@ namespace DDConnect
         public const int SQLITE_OK = 0;
         public const int SQLITE_BUSY = 5;
         public const int SQLITE_LOCKED = 6;
+        public const int SQLITE_INTERRUPT = 9;
         public const int SQLITE_ROW = 100;
         public const int SQLITE_DONE = 101;
 
@@ -52,6 +53,31 @@ namespace DDConnect
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         private static extern int sqlite3_prepare_v2(IntPtr db, byte[] sql, int nByte, out IntPtr stmt, IntPtr tail);
+
+        // Same function as sqlite3_prepare_v2, but takes a pinned pointer so the end of the parsed statement can be located.
+        [DllImport(Lib, EntryPoint = "sqlite3_prepare_v2", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_prepare_v2_ptr(IntPtr db, IntPtr sql, int nByte, out IntPtr stmt, out IntPtr tail);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_stmt_readonly(IntPtr stmt);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void sqlite3_interrupt(IntPtr db);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_column_count(IntPtr stmt);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr sqlite3_column_name(IntPtr stmt, int column);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_column_type(IntPtr stmt, int column);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern double sqlite3_column_double(IntPtr stmt, int column);
+
+        [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sqlite3_column_bytes(IntPtr stmt, int column);
 
         [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)]
         private static extern int sqlite3_step(IntPtr stmt);
@@ -126,6 +152,51 @@ namespace DDConnect
             }
             return stmt;
         }
+
+        /// <summary>
+        /// Compiles the first statement of <paramref name="sql"/>. <paramref name="rest"/> is whatever follows it
+        /// (null when nothing does). The result is IntPtr.Zero when the text holds no statement (blank or comments only).
+        /// </summary>
+        public static IntPtr PrepareFirst(IntPtr db, string sql, out string rest)
+        {
+            byte[] bytes = Utf8(sql);
+            GCHandle pin = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            try
+            {
+                IntPtr start = pin.AddrOfPinnedObject();
+                int rc = sqlite3_prepare_v2_ptr(db, start, bytes.Length, out IntPtr stmt, out IntPtr tail);
+                if (rc != SQLITE_OK)
+                {
+                    throw new SqliteNativeException(rc, FromUtf8(sqlite3_errmsg(db)));
+                }
+                int used = (int)((long)tail - (long)start);
+                // bytes ends with the NUL appended by Utf8; anything between the tail and it is the remainder.
+                int remaining = bytes.Length - 1 - used;
+                rest = remaining > 0 ? Encoding.UTF8.GetString(bytes, used, remaining) : null;
+                return stmt;
+            }
+            finally
+            {
+                pin.Free();
+            }
+        }
+
+        /// <summary>True when sqlite says the statement cannot change the database file.</summary>
+        public static bool IsReadOnly(IntPtr stmt) => sqlite3_stmt_readonly(stmt) != 0;
+
+        /// <summary>Makes a running statement on <paramref name="db"/> stop with SQLITE_INTERRUPT. Safe from another thread while db is open.</summary>
+        public static void Interrupt(IntPtr db) => sqlite3_interrupt(db);
+
+        public static int ColumnCount(IntPtr stmt) => sqlite3_column_count(stmt);
+
+        public static string ColumnName(IntPtr stmt, int column) => FromUtf8(sqlite3_column_name(stmt, column));
+
+        /// <summary>Storage class of the value in the current row: 1 integer, 2 float, 3 text, 4 blob, 5 null.</summary>
+        public static int ColumnType(IntPtr stmt, int column) => sqlite3_column_type(stmt, column);
+
+        public static double ColumnDouble(IntPtr stmt, int column) => sqlite3_column_double(stmt, column);
+
+        public static int ColumnBytes(IntPtr stmt, int column) => sqlite3_column_bytes(stmt, column);
 
         /// <summary>Returns true when a row is available, false when the statement is done.</summary>
         public static bool Step(IntPtr db, IntPtr stmt)

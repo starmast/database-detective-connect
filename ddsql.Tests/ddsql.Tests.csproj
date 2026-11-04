@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RollForward>LatestMajor</RollForward>
+    <!-- BridgeJson.cs is the mod's file, written without nullable annotations. -->
+    <NoWarn>$(NoWarn);CS8603;CS8625</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ddsql\ddsql.csproj" />
+    <!-- The mod's JSON helpers have no Unity dependency, so they are tested here. -->
+    <Compile Include="..\DDConnect\BridgeJson.cs" Link="BridgeJson.cs" />
+  </ItemGroup>
+
+</Project>
